@@ -1,6 +1,6 @@
 var mysql = require("mysql");
 var inquirer = require("inquirer");
-
+require("console.table");
 var connection = mysql.createConnection({
     host: "localhost",
     port: 8889,
@@ -9,22 +9,11 @@ var connection = mysql.createConnection({
     database: "bamazon"
 });
 
-// const cTable = require("console.table");
-
 function displayItems() {
-    var divider = "\n-------------------------------------------------";
-    console.log("\nItems available for sale:\n" + divider);
+    console.log("\nItems available for sale:\n");
     connection.query("SELECT * FROM products", function(err, res) {
         if (err) throw err;
-        res.forEach(function(product) {
-            console.log(product.product_name + " (Item ID: " + product.item_id + "), $" + product.price + "\n" + product.stock_quantity + " currently in stock" + "\nDepartment: " + product.department_name + divider);
-        });
-        console.log("\n");
-        
-        // res.forEach(function(product) {
-        //     const table = cTable.getTable(product);
-        //     console.log(table);
-        // })
+        console.table(res);
 
         // nesting promptUser() in here allows for correct order of console logging
         promptUser();
@@ -64,11 +53,11 @@ function promptUser() {
                 ], function(err, res) {
                     if (err) throw err;
                     var totalCost = response.units * unitPrice;
-                    console.log("Your total cost is $" + totalCost + ".");
+                    console.log("\nYour total cost is $" + totalCost + ".");
                     displayItems();
                 })
             } else {
-                console.log("Insufficient quantity.");
+                console.log("\nInsufficient quantity.");
                 displayItems();
             }
         })
