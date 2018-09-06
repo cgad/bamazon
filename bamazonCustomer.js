@@ -9,19 +9,26 @@ var connection = mysql.createConnection({
     database: "bamazon"
 });
 
+// const cTable = require("console.table");
+
 function displayItems() {
-    var divider = "\n\n-------------------------------------------------\n";
-    console.log("\nItems available for sale:" + divider);
+    var divider = "\n-------------------------------------------------";
+    console.log("\nItems available for sale:\n" + divider);
     connection.query("SELECT * FROM products", function(err, res) {
         if (err) throw err;
-        // console.log(res);
         res.forEach(function(product) {
-            console.log(product.product_name + " (Item ID: " + product.item_id + "), $" + product.price + "\nDepartment: " + product.department_name + divider);
+            console.log(product.product_name + " (Item ID: " + product.item_id + "), $" + product.price + "\n" + product.stock_quantity + " currently in stock" + "\nDepartment: " + product.department_name + divider);
         });
+        console.log("\n");
+        
+        // res.forEach(function(product) {
+        //     const table = cTable.getTable(product);
+        //     console.log(table);
+        // })
+
         // nesting promptUser() in here allows for correct order of console logging
         promptUser();
     });
-    connection.end();
 };
 
 function promptUser() {
@@ -38,19 +45,34 @@ function promptUser() {
         }
     ])
     .then(function(response) {
-        console.log("hi");
+        connection.query("SELECT * FROM products WHERE item_id=" + response.id, function(err, res) {
+            if (err) throw err;
+
+            // check stock. if enough in stock, update new stock quantity and give user total cost of order
+            var corrStock = res[0].stock_quantity;
+            var unitPrice = res[0].price;
+            if (response.units <= corrStock) {
+                var newQuantity = corrStock - response.units;
+                connection.query("UPDATE products SET ? WHERE ?", 
+                [
+                    {
+                        stock_quantity: newQuantity
+                    },
+                    {
+                        item_id: response.id
+                    }
+                ], function(err, res) {
+                    if (err) throw err;
+                    var totalCost = response.units * unitPrice;
+                    console.log("Your total cost is $" + totalCost + ".");
+                    displayItems();
+                })
+            } else {
+                console.log("Insufficient quantity.");
+                displayItems();
+            }
+        })
     })
-}
-
-function checkStock() {
-    // are there enough items in stock to fulfill the user's order?
-    // if enough in stock to fulfill order, update products table with new stock quantity
-    // else, log "Insufficient quantity" & return false
-}
-
-function updateProducts() {
-    // if checkStock(), update products table with new stock quantity
-    // then show customer total cost of their purchase
 }
 
 connection.connect(function(err) {
